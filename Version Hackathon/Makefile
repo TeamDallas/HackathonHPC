@@ -27,10 +27,10 @@ bindir := $(prefix)/bin
 LDLIBS := -lz
 GCC_PREFIX := $(shell dirname `which gcc`)
 GCC_SUFFIX :=
-CC ?= $(GCC_PREFIX)/gcc$(GCC_SUFFIX)
-CPP ?= $(GCC_PREFIX)/g++$(GCC_SUFFIX)
+CC ?= $(GCC_PREFIX)/pgcc$(GCC_SUFFIX)
+CPP ?= $(GCC_PREFIX)/pgc++$(GCC_SUFFIX)
 CXX ?= $(CPP)
-CXXFLAGS += -std=c++98
+CXXFLAGS +=  -acc -ta=tesla:cc35 -Mm128
 
 HEADERS := $(wildcard *.h)
 BOWTIE_MM := 1
@@ -184,10 +184,10 @@ ifeq (32,$(BITS))
   $(error bowtie2 compilation requires a 64-bit platform )
 endif
 
-SSE_FLAG := -msse2
+SSE_FLAG := -fastsse
 
-DEBUG_FLAGS    := -O0 -g3 -m64 $(SSE_FLAG)
-RELEASE_FLAGS  := -O3 -m64 $(SSE_FLAG) -funroll-loops -g3
+DEBUG_FLAGS    := -O0  -m64 $(SSE_FLAG)
+RELEASE_FLAGS  := -O3 -m64 $(SSE_FLAG) -Munroll 
 NOASSERT_FLAGS := -DNDEBUG
 FILE_FLAGS     := -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 DEBUG_DEFS     = -DCOMPILER_OPTIONS="\"$(DEBUG_FLAGS) $(CXXFLAGS)\""
@@ -282,8 +282,7 @@ both: bowtie2-align-s bowtie2-build-s bowtie2-align-l bowtie2-build-l ;
 both-debug: bowtie2-align-s-debug bowtie2-build-s-debug bowtie2-align-l-debug bowtie2-build-l-debug ;
 both-sanitized: bowtie2-align-s-sanitized bowtie2-build-s-sanitized bowtie2-align-l-sanitized bowtie2-build-l-sanitized ;
 
-DEFS := -fno-strict-aliasing \
-        -DBOWTIE2_VERSION="\"`cat VERSION`\"" \
+DEFS := -DBOWTIE2_VERSION="\"`cat VERSION`\"" \
         -DBUILD_HOST="\"`hostname`\"" \
         -DBUILD_TIME="\"`date`\"" \
         -DCOMPILER_VERSION="\"`$(CXX) -v 2>&1 | tail -1`\"" \
@@ -301,7 +300,7 @@ $(BOWTIE2_BIN_LIST_SAN): CXXFLAGS += $(SANITIZER_FLAGS)
 
 bowtie2-build-s-sanitized bowtie2-build-s: bt2_build.cpp $(SHARED_CPPS) $(HEADERS)
 	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 $(NOASSERT_FLAGS) -Wall \
+		$(DEFS) -DBOWTIE2 $(NOASSERT_FLAGS)  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(BUILD_CPPS_MAIN) \
@@ -309,7 +308,7 @@ bowtie2-build-s-sanitized bowtie2-build-s: bt2_build.cpp $(SHARED_CPPS) $(HEADER
 
 bowtie2-build-l-sanitized bowtie2-build-l: bt2_build.cpp $(SHARED_CPPS) $(HEADERS)
 	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX $(NOASSERT_FLAGS) -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX $(NOASSERT_FLAGS)  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(BUILD_CPPS_MAIN) \
@@ -317,7 +316,7 @@ bowtie2-build-l-sanitized bowtie2-build-l: bt2_build.cpp $(SHARED_CPPS) $(HEADER
 
 bowtie2-build-s-debug: bt2_build.cpp $(SHARED_CPPS) $(HEADERS)
 	$(CXX) $(DEBUG_FLAGS) $(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -Wall \
+		$(DEFS) -DBOWTIE2  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(BUILD_CPPS_MAIN) \
@@ -325,7 +324,7 @@ bowtie2-build-s-debug: bt2_build.cpp $(SHARED_CPPS) $(HEADERS)
 
 bowtie2-build-l-debug: bt2_build.cpp $(SHARED_CPPS) $(HEADERS)
 	$(CXX) $(DEBUG_FLAGS) $(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(BUILD_CPPS_MAIN) \
@@ -337,7 +336,7 @@ bowtie2-build-l-debug: bt2_build.cpp $(SHARED_CPPS) $(HEADERS)
 
 bowtie2-align-s-sanitized bowtie2-align-s: bt2_search.cpp $(SEARCH_CPPS) $(SHARED_CPPS) $(HEADERS) $(SEARCH_FRAGMENTS)
 	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 $(NOASSERT_FLAGS) -Wall \
+		$(DEFS) -DBOWTIE2 $(NOASSERT_FLAGS)  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(SEARCH_CPPS_MAIN) \
@@ -345,7 +344,7 @@ bowtie2-align-s-sanitized bowtie2-align-s: bt2_search.cpp $(SEARCH_CPPS) $(SHARE
 
 bowtie2-align-l-sanitized bowtie2-align-l: bt2_search.cpp $(SEARCH_CPPS) $(SHARED_CPPS) $(HEADERS) $(SEARCH_FRAGMENTS)
 	$(CXX) $(RELEASE_FLAGS) $(RELEASE_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX $(NOASSERT_FLAGS) -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX $(NOASSERT_FLAGS)  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(SEARCH_CPPS_MAIN) \
@@ -354,7 +353,7 @@ bowtie2-align-l-sanitized bowtie2-align-l: bt2_search.cpp $(SEARCH_CPPS) $(SHARE
 bowtie2-align-s-debug: bt2_search.cpp $(SEARCH_CPPS) $(SHARED_CPPS) $(HEADERS) $(SEARCH_FRAGMENTS)
 	$(CXX) $(DEBUG_FLAGS) \
 		$(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -Wall \
+		$(DEFS) -DBOWTIE2  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(SEARCH_CPPS_MAIN) \
@@ -363,7 +362,7 @@ bowtie2-align-s-debug: bt2_search.cpp $(SEARCH_CPPS) $(SHARED_CPPS) $(HEADERS) $
 bowtie2-align-l-debug: bt2_search.cpp $(SEARCH_CPPS) $(SHARED_CPPS) $(HEADERS) $(SEARCH_FRAGMENTS)
 	$(CXX) $(DEBUG_FLAGS) \
 		$(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX  \
 		$(CPPFLAGS) \
 		-o $@ $< \
 		$(SHARED_CPPS) $(SEARCH_CPPS_MAIN) \
@@ -376,7 +375,7 @@ bowtie2-align-l-debug: bt2_search.cpp $(SEARCH_CPPS) $(SHARED_CPPS) $(HEADERS) $
 bowtie2-inspect-s-sanitized bowtie2-inspect-s: bt2_inspect.cpp $(HEADERS) $(SHARED_CPPS)
 	$(CXX) $(RELEASE_FLAGS) \
 		$(RELEASE_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_INSPECT_MAIN -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_INSPECT_MAIN  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		$(SHARED_CPPS) \
@@ -385,7 +384,7 @@ bowtie2-inspect-s-sanitized bowtie2-inspect-s: bt2_inspect.cpp $(HEADERS) $(SHAR
 bowtie2-inspect-l-sanitized bowtie2-inspect-l: bt2_inspect.cpp $(HEADERS) $(SHARED_CPPS)
 	$(CXX) $(RELEASE_FLAGS) \
 		$(RELEASE_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_INSPECT_MAIN  -DBOWTIE_64BIT_INDEX -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_INSPECT_MAIN  -DBOWTIE_64BIT_INDEX  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		$(SHARED_CPPS) \
@@ -394,7 +393,7 @@ bowtie2-inspect-l-sanitized bowtie2-inspect-l: bt2_inspect.cpp $(HEADERS) $(SHAR
 bowtie2-inspect-s-debug: bt2_inspect.cpp $(HEADERS) $(SHARED_CPPS)
 	$(CXX) $(DEBUG_FLAGS) \
 		$(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_INSPECT_MAIN -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_INSPECT_MAIN  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		$(SHARED_CPPS) \
@@ -403,7 +402,7 @@ bowtie2-inspect-s-debug: bt2_inspect.cpp $(HEADERS) $(SHARED_CPPS)
 bowtie2-inspect-l-debug: bt2_inspect.cpp $(HEADERS) $(SHARED_CPPS)
 	$(CXX) $(DEBUG_FLAGS) \
 		$(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX -DBOWTIE_INSPECT_MAIN -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_64BIT_INDEX -DBOWTIE_INSPECT_MAIN  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		$(SHARED_CPPS) \
@@ -416,7 +415,7 @@ bowtie2-inspect-l-debug: bt2_inspect.cpp $(HEADERS) $(SHARED_CPPS)
 bowtie2-dp: bt2_dp.cpp $(HEADERS) $(SHARED_CPPS) $(DP_CPPS)
 	$(CXX) $(RELEASE_FLAGS) \
 		$(RELEASE_DEFS) $(CXXFLAGS) $(NOASSERT_FLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_DP_MAIN -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_DP_MAIN  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		$(DP_CPPS) $(SHARED_CPPS) \
@@ -425,7 +424,7 @@ bowtie2-dp: bt2_dp.cpp $(HEADERS) $(SHARED_CPPS) $(DP_CPPS)
 bowtie2-dp-debug: bt2_dp.cpp $(HEADERS) $(SHARED_CPPS) $(DP_CPPS)
 	$(CXX) $(DEBUG_FLAGS) \
 		$(DEBUG_DEFS) $(CXXFLAGS) \
-		$(DEFS) -DBOWTIE2 -DBOWTIE_DP_MAIN -Wall \
+		$(DEFS) -DBOWTIE2 -DBOWTIE_DP_MAIN  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		$(DP_CPPS) $(SHARED_CPPS) \
@@ -476,7 +475,7 @@ bowtie2-seeds-debug: aligner_seed.cpp ccnt_lut.cpp alphabet.cpp aligner_seed.h b
 	$(CXX) $(DEBUG_FLAGS) \
 		$(DEBUG_DEFS) $(CXXFLAGS) \
 		-DSCAN_MAIN \
-		$(DEFS) -Wall \
+		$(DEFS)  \
 		$(CPPFLAGS) -I . \
 		-o $@ $< \
 		aligner_seed.cpp bt2_idx.cpp ccnt_lut.cpp alphabet.cpp bt2_io.cpp \
